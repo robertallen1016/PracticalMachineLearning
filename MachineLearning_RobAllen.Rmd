@@ -2,6 +2,7 @@
 title: "Machine Learning Course Project"
 author: "Robert W Allen"
 date: "March 9, 2016"
+output: word_document
 ---
 ##Download and Clean Testing and Training Data for Project  
 Download the Testing and Training Data from the web.  
@@ -47,7 +48,7 @@ First we will build some models predicting the classe variable.
 Model 1: rpart (Decision Tree)  
 Model 2: GBM (Boosting with Trees)   
 Model 3: Random Forest
-```{r models, cache=TRUE}
+```{r}
 library(randomForest)
 library(e1071)
 library(rpart)
@@ -65,14 +66,11 @@ mod_rf <- train(classe~., method = "rf", data=train_data)
 Then we will use this model to predict on the testing data set and check the results.  We will calculate the mean of correct answers.  The first mean will be for the rpart model, the second mean will be for the gbm model and the final mean for the Random Forest model.
 ```{r}
 mean_rpart <- mean(predict(mod_rpart, test_data) == test_data$classe) * 100
-mean_rpart
 
 mean_gbm <- mean(predict(mod_gbm, test_data) == test_data$classe) * 100
-mean_gbm
 
 mean_rf <- mean(predict(mod_rf, test_data) == test_data$classe) * 100
-mean_rf
 ```
 ##Conclusion  
-This test shows that the Random Forest model is more accurante than the GBM model and RPART model.  The random forest model has a testing error (1 - Standard Error) of `r 100 - mean_rf`, while the GBM model as a testing error of `r 1 - mean_gbm` and the rpart model having an error of `r 100 - mean_rpart`.
+This test shows that the Random Forest model is more accurante than the GBM model and RPART model.  The random forest model has a testing error (1 - Accuracy of Testing) of 0.63%, while the GBM model has a testing error of 3.55% and the rpart model having an error of 49.92%.
 
