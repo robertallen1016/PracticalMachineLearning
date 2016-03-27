@@ -1,0 +1,78 @@
+---
+title: "Machine Learning Course Project"
+author: "Robert W Allen"
+date: "March 9, 2016"
+---
+##Download and Clean Testing and Training Data for Project  
+Download the Testing and Training Data from the web.  
+
+There are fields that have the Excel division by year indicator as a value.  These need to be converted to NA.
+```{r}
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(train_url, "pml-training.csv")
+raw_train_data <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(test_url, "pml-testing.csv")
+raw_test_data <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+```
+##Descriptive Analysis
+Before we can begin the anlaysis we need to understand the variables, especially the one one we hope to predict,  classe.
+```{r}
+head(raw_train_data)
+summary(raw_train_data)
+summary(raw_train_data$classe)
+```
+There are a lot of columnss, and some look like they have a lot of missing (na) values.  We will clean these up now.
+```{r}
+dim(raw_train_data)
+sum_na <- sapply(raw_train_data, function(x) {sum(is.na(x))})
+rmv_columns = names(sum_na[sum_na>=10000])
+clean_train_data = raw_train_data[, !names(raw_train_data) %in% rmv_columns] 
+```
+We will also remove the frist 7 columns that just contain a lot of metadata that we will not neeed.
+```{r}
+clean_train_data = clean_train_data[,-c(1:7)]
+```
+Now we can take our training data and partition it into a training set and test for cross validation.
+```{r}
+library(caret)
+inTrain = createDataPartition(y=clean_train_data$classe, p=0.7, list=FALSE)
+train_data = clean_train_data[inTrain,]
+test_data = clean_train_data[-inTrain,]  
+```
+##Modeling Building  
+###Model: Random Forest
+First we will build some models predicting the classe variable.  
+Model 1: rpart (Decision Tree)  
+Model 2: GBM (Boosting with Trees)   
+Model 3: Random Forest
+```{r models, cache=TRUE}
+library(randomForest)
+library(e1071)
+library(rpart)
+library(gbm)
+set.seed(1234)
+
+mod_rpart <- train(classe~., method = "rpart", data=train_data)
+plot(mod_rpart$finalModel, uniform=TRUE, main="Decision Tree")
+text(mod_rpart$finalModel, use.n=TRUE, all=TRUE, cex=.8)
+
+mod_gbm <- train(classe~., method = "gbm", data=train_data, verbose=FALSE)
+
+mod_rf <- train(classe~., method = "rf", data=train_data)
+```
+Then we will use this model to predict on the testing data set and check the results.  We will calculate the mean of correct answers.  The first mean will be for the rpart model, the second mean will be for the gbm model and the final mean for the Random Forest model.
+```{r}
+mean_rpart <- mean(predict(mod_rpart, test_data) == test_data$classe) * 100
+mean_rpart
+
+mean_gbm <- mean(predict(mod_gbm, test_data) == test_data$classe) * 100
+mean_gbm
+
+mean_rf <- mean(predict(mod_rf, test_data) == test_data$classe) * 100
+mean_rf
+```
+##Conclusion  
+This test shows that the Random Forest model is more accurante than the GBM model and RPART model.  The random forest model has a testing error (1 - Standard Error) of `r 100 - mean_rf`, while the GBM model as a testing error of `r 1 - mean_gbm` and the rpart model having an error of `r 100 - mean_rpart`.
+
